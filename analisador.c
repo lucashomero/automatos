@@ -3,9 +3,12 @@
 #include <string.h>
 #include "tokens.h"
 
+//Definindo os tamanhos máximos da memoria e dos simbolos
 #define MAX_MEMORIA_ANALISADOR 100
 #define MAX_TAMANHO_SIMBOLOS 100
 
+
+//função para fazer a leitura de um arquivo que será passado como parametro
 void __lerArquivo(char f[]){
     FILE *file = fopen(f, "r");
     char letra;
