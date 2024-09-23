@@ -3,7 +3,7 @@
 #include <string.h>
 #include "tokens.h"
 
-//Definindo os tamanhos máximos da memoria e dos simbolos
+//Definindo os tamanhos máximos dos arrays de memoria e dos simbolos
 #define MAX_MEMORIA_ANALISADOR 100
 #define MAX_TAMANHO_SIMBOLOS 100
 
