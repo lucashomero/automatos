@@ -3,9 +3,12 @@
 #include <string.h>
 #include "tokens.h"
 
+//Definindo os tamanhos máximos da memoria e dos simbolos
 #define MAX_MEMORIA_ANALISADOR 100
 #define MAX_TAMANHO_SIMBOLOS 100
 
+
+//função para fazer a leitura de um arquivo que será passado como parametro
 void __lerArquivo(char f[]){
     FILE *file = fopen(f, "r");
     char letra;
@@ -25,6 +28,7 @@ void __lerArquivo(char f[]){
     }
 }
 
+// Criando um enum para classificar os tokens
 typedef enum {
 
     TK_PALAVRA_CHAVE,
@@ -67,23 +71,25 @@ typedef enum {
 
 } TiposTokens;
 
+// Criando um struct para armazenar informações sobre cada token
 typedef struct {
     TiposTokens tipo;
     char tamanho[MAX_MEMORIA_ANALISADOR];
     int linha_ocorrencia;
     int coluna_identificado;
-    
-
 } Token;
 
+// Criando uma struct para armazenar informaçoes sobre simbolos
 typedef struct {
     char lexema_analisado[MAX_MEMORIA_ANALISADOR];
     TiposTokens tipo;
 } Simbolo;
 
+// Criando um array do tipo Simbolo que serve como tabela de simbolos
 Simbolo tabela_simbolos[MAX_TAMANHO_SIMBOLOS];
-int indice_simbolo = 0;
+int indice_simbolo = 0; // essa variavel controla o o indice da tabela de simbolos
 
+// Função responsável por verificar e, se necessário, adicionar um novo símbolo à tabela de simbolos
 void __analisarSimbolo(const char *lexema, TiposTokens tipo) {
     for (int i = 0; i < indice_simbolo; i++) {
         if (strcmp(tabela_simbolos[indice_simbolo].lexema_analisado, lexema) == 0) {
@@ -97,6 +103,8 @@ void __analisarSimbolo(const char *lexema, TiposTokens tipo) {
     
 }
 
+// Função responsavel por buscar um simbolo na tabela de simbolos a partir do seu lexama
+// retorna o tipo de token correspondente a ela e se o simbolo nao for encontrado retorna o tipo TK_ERRO
 TiposTokens __getSimbolo(const char *lexema) {
     for (int i = 0; i < indice_simbolo; i++){
         if (strcmp(tabela_simbolos[i].lexema_analisado, lexema) == 0) {
@@ -106,6 +114,7 @@ TiposTokens __getSimbolo(const char *lexema) {
     return TK_ERRO;
 }
 
+// Função responsavel por inserir na tabela de simbolos as palavras chave associadas ao token TK_PALAVRA_CHAVE
 void __palavrasChaves(){
     const char *palavra_chave[] = {
         "program",
@@ -124,14 +133,14 @@ void __palavrasChaves(){
     int total_palavras = sizeof(palavra_chave) / sizeof(palavra_chave[0]);
 
     for (int i = 0; i < total_palavras; i++) {
-        /*if (strcmp(string, palavra_chave[i]) == 0) {
-            return 1;
-        }*/
+       
        __analisarSimbolo(palavra_chave[i], TK_PALAVRA_CHAVE);
     }
 
 }
 
+// Função responsável por identificar e categorizar operadores e símbolos (como parênteses e chaves) com base no lexema passado como parametro
+// Se o lexema não for reconhecido a função retorna TK_ERROR
 int __getOperadorandSimbolos(const char *operador) {
     if (strcmp(operador, "=") == 0) {
         return OP_EQ;
@@ -206,6 +215,7 @@ int __getOperadorandSimbolos(const char *operador) {
 }
 
 
+// Função responsável por exibir os tokens analisados pelo analisador léxico, formatando a saída em um arquivo de destino
 void __displayTokens(FILE *arquivo_destino, Token string){
     const char *tipo_analisado;
     int codigo;
@@ -250,6 +260,7 @@ void __displayTokens(FILE *arquivo_destino, Token string){
     fprintf(arquivo_destino, "|TOKEN: %s | TOKEN ANALISADO: %s | CODIGO: %d | LINHA DE OCORRENCIA: %d | COLUNA: %d |\n\n", tipo_analisado, string.tamanho, codigo, string.linha_ocorrencia, string.coluna_identificado);
 }
 
+// Função  responsável por exibir a tabela de símbolos, que armazena lexemas e seus tipos formatando a saida em um arquivo 
 void __displaySimbolos(FILE *arquivo_destino) {
     fprintf(arquivo_destino, "\nTABELA SIMBOLOS\n");
     for (int i = 0; i <indice_simbolo; i++) {
@@ -308,9 +319,12 @@ int __operadores(const char *string) {
 }
 */
 
+// Principal função 
+// lê um arquivo de origem, identifica tokens e escreve os resultados em um arquivo de destino
 void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino) {
     FILE *file = fopen(arquivo_origem, "r");
 
+    // Verifica se o arquivo de origem foi aberto corretamente
     if (!arquivo_origem) {
         perror("ERRO: O ARQUIVO INFORMADO NAO FOI LOCALIZADO, REVEJA SEUS PARAMETROS.");
         return;
@@ -318,22 +332,26 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
 
     FILE *file_destino = fopen(arquivo_destino, "w");
 
+    // Verifica se o arquivo de destino foi aberto corretamente
     if (!arquivo_destino) {
         perror("ERRO: O ARQUIVO INFORMADO NAO FOI LOCALIZADO, REVEJA SEUS PARAMETROS.");
         fclose(file);
         return;
     }
 
-    char ch;
-    char buffer[MAX_MEMORIA_ANALISADOR];
-    int indice_buffer = 0;
-    int linha = 1;
-    int coluna = 1;
-    int abriu_parenteses = 0;
-    int abriu_chaves = 0;
+    // Variaveis importantes para a execução do código
+    char ch; // Armazena o caractere lido do arquivo
+    char buffer[MAX_MEMORIA_ANALISADOR]; // Buffer para armazenar tokens
+    int indice_buffer = 0; // Índice do buffer
+    int linha = 1;  // Contador de linhas
+    int coluna = 1;  // Contador de colunas
+    int abriu_parenteses = 0;  // Contador de parênteses abertos
+    int abriu_chaves = 0;  // Contador de chaves abertas
 
+    // Loop principal para ler cada caractere do arquivo
     while ((ch = fgetc(file)) != EOF) {
 
+        // Ignora espaços em branco e atualiza linha/coluna
         if (isspace(ch)) {
             if (ch == '\n') {
                 linha++;
@@ -345,6 +363,7 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
             continue;
         }
 
+        // Lida com identificadores e palavras-chave
         if (isalpha(ch)) {
             buffer[indice_buffer++] = ch;
             while (isalnum(ch = fgetc(file))) {
@@ -371,6 +390,7 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
             strcpy(token.tamanho, buffer);
             __displayTokens(file_destino, token);
         }
+        // Lida com números (inteiros e reais)
         else if (isdigit(ch)) {
             buffer[indice_buffer++] = ch;
             int eh_real = 0;
@@ -401,6 +421,7 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
             strcpy(token.tamanho, buffer);
             __displayTokens(file_destino, token);
         }
+        // Lida com strings
         else if (ch == '"') {
             buffer[indice_buffer++] = ch;
             int ocorrencia_abertura = coluna;
@@ -433,6 +454,7 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
                 indice_buffer = 0;
             }
         }
+        // Lida com operadores
         else if(strchr("+-*/=<>:", ch)) { //strchr VAI PERCORRER UM PONTEIRO PROCUANDO A OCORRÊNCIA DO SIMBOLO
             /*Token token;
             token.tipo = TK_OPERADOR;
@@ -465,6 +487,7 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
             coluna++;
             
         }
+        // Lida com símbolos
         else if(strchr("{},;().", ch)) { //strchr VAI PERCORRER UM PONTEIRO PROCUANDO A OCORRÊNCIA DO SIMBOLO
             Token token;
             token.tipo = TK_SIMBOLO;
@@ -501,6 +524,7 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
                 }
             }
         }
+        // Lida com caracteres não reconhecidos
         else {
             Token token;
             token.tipo = TK_ERRO;
@@ -517,6 +541,7 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
 
     }
 
+    // Verificação de parênteses e chaves não fechados
     if (abriu_parenteses > 0) {
         fprintf(file_destino, "\n|ERRO LEXICO IDENTIFICADO: %d PAREENTESES NAO FOI FECHADO CORRETAMENTE|\n\n", abriu_parenteses);
     }
@@ -524,10 +549,12 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
         fprintf(file_destino, "\n|ERRO LEXICO IDENTIFICADO: %d CHAVES NAO FOI FECHADO CORRETAMENTE|\n\n", abriu_chaves);
     }
 
+    // Exibe a tabela de símbolos
     __displaySimbolos(file_destino);
 
+    // Fecha os arquivos
     fclose(file_destino);
-    fclose(file); //FECHAR O ARQUIVO APOS A REALIZAÇÃO DE TODO O PROCESSO
+    fclose(file); 
 }
 
 int main() {
