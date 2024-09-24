@@ -3,12 +3,9 @@
 #include <string.h>
 #include "tokens.h"
 
-//Definindo os tamanhos máximos dos arrays de memoria e dos simbolos
 #define MAX_MEMORIA_ANALISADOR 100
 #define MAX_TAMANHO_SIMBOLOS 100
 
-
-//função para fazer a leitura de um arquivo que será passado como parametro
 void __lerArquivo(char f[]){
     FILE *file = fopen(f, "r");
     char letra;
@@ -28,7 +25,6 @@ void __lerArquivo(char f[]){
     }
 }
 
-// Criando um enum para classificar os tokens
 typedef enum {
 
     TK_PALAVRA_CHAVE,
@@ -37,59 +33,28 @@ typedef enum {
     TK_SIMBOLO,
     TK_INTEGER,
     TK_REALS,
-    TK_STRING,
     TK_ERRO
-
-    // TOKENS DE OPERADORES
-/*
-    op_eq = '=',
-    op_ge = '>=',
-    op_mul = '*',
-    op_ne = '<>',
-    op_le = '<=',
-    op_div = '/',
-    op_gt = '>',
-    op_ad = '+',
-    op_ass = '=',
-    op_lt = '<',
-    op_min = '-',
-
-    // TOKENS DE SIMBOLOS
-
-    smb_obc = '{',
-    smb_com = ',',
-    smb_cbc = '}',
-    smb_sem = ';',
-    smb_opa = '(',
-    smb_cpa = ')',
-*/
-    // TOKEN PARA PALAVRA-CHAVE(RESERVADO)
-
-
-    // TOKEN PARA IDENFIFICADORES
 
 
 } TiposTokens;
 
-// Criando um struct para armazenar informações sobre cada token
 typedef struct {
     TiposTokens tipo;
     char tamanho[MAX_MEMORIA_ANALISADOR];
     int linha_ocorrencia;
     int coluna_identificado;
+    
+
 } Token;
 
-// Criando uma struct para armazenar informaçoes sobre simbolos
 typedef struct {
     char lexema_analisado[MAX_MEMORIA_ANALISADOR];
     TiposTokens tipo;
 } Simbolo;
 
-// Criando um array do tipo Simbolo que serve como tabela de simbolos
 Simbolo tabela_simbolos[MAX_TAMANHO_SIMBOLOS];
-int indice_simbolo = 0; // essa variavel controla o o indice da tabela de simbolos
+int indice_simbolo = 0;
 
-// Função responsável por verificar e, se necessário, adicionar um novo símbolo à tabela de simbolos
 void __analisarSimbolo(const char *lexema, TiposTokens tipo) {
     for (int i = 0; i < indice_simbolo; i++) {
         if (strcmp(tabela_simbolos[indice_simbolo].lexema_analisado, lexema) == 0) {
@@ -103,8 +68,6 @@ void __analisarSimbolo(const char *lexema, TiposTokens tipo) {
     
 }
 
-// Função responsavel por buscar um simbolo na tabela de simbolos a partir do seu lexama
-// retorna o tipo de token correspondente a ela e se o simbolo nao for encontrado retorna o tipo TK_ERRO
 TiposTokens __getSimbolo(const char *lexema) {
     for (int i = 0; i < indice_simbolo; i++){
         if (strcmp(tabela_simbolos[i].lexema_analisado, lexema) == 0) {
@@ -114,33 +77,92 @@ TiposTokens __getSimbolo(const char *lexema) {
     return TK_ERRO;
 }
 
-// Função responsavel por inserir na tabela de simbolos as palavras chave associadas ao token TK_PALAVRA_CHAVE
 void __palavrasChaves(){
     const char *palavra_chave[] = {
         "program",
+        "PROGRAM",
         "var",
+        "VAR",
         "integer",
+        "INTEGER",
         "real",
+        "REAL",
         "begin",
+        "BEGIN",
         "end",
+        "END",
         "if",
+        "IF",
         "then",
+        "THEN",
         "else",
+        "ELSE"
         "while",
+        "WHILE"
         "do"
+        "DO"
+    };
+
+    const char *simbolos[] = {
+        "{",
+        ",",
+        "}",
+        ";",
+        "(",
+        ")",
+        "."
+    };
+
+    const char *operadores[] = {
+        "=",
+        ">=",
+        "*",
+        "<>",
+        "<=",
+        "/",
+        ">",
+        "+",
+        "=",
+        "<",
+        "-"
+    };
+
+    const char *numeros[] = {
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
     };
 
     int total_palavras = sizeof(palavra_chave) / sizeof(palavra_chave[0]);
+    int total_simbolos = sizeof(simbolos) / sizeof(simbolos[0]);
+    int total_operadpres = sizeof(operadores) / sizeof(operadores[0]);
+    int total_numeros = sizeof(numeros) / sizeof(numeros[0]);
 
     for (int i = 0; i < total_palavras; i++) {
-       
        __analisarSimbolo(palavra_chave[i], TK_PALAVRA_CHAVE);
     }
-
+    for (int j = 0; j < total_simbolos; j++) {
+       
+       __analisarSimbolo(simbolos[j], TK_SIMBOLO);
+    }
+    for (int k = 0; k < total_simbolos; k++) {
+       
+       __analisarSimbolo(operadores[k], TK_OPERADOR);
+    }
+    for (int l = 0; l < total_simbolos; l++) {
+       
+       __analisarSimbolo(numeros[l], TK_INTEGER);
+    }
 }
 
-// Função responsável por identificar e categorizar operadores e símbolos (como parênteses e chaves) com base no lexema passado como parametro
-// Se o lexema não for reconhecido a função retorna TK_ERROR
+
 int __getOperadorandSimbolos(const char *operador) {
     if (strcmp(operador, "=") == 0) {
         return OP_EQ;
@@ -214,8 +236,6 @@ int __getOperadorandSimbolos(const char *operador) {
     return TK_ERROR;
 }
 
-
-// Função responsável por exibir os tokens analisados pelo analisador léxico, formatando a saída em um arquivo de destino
 void __displayTokens(FILE *arquivo_destino, Token string){
     const char *tipo_analisado;
     int codigo;
@@ -260,9 +280,8 @@ void __displayTokens(FILE *arquivo_destino, Token string){
     fprintf(arquivo_destino, "|TOKEN: %s | TOKEN ANALISADO: %s | CODIGO: %d | LINHA DE OCORRENCIA: %d | COLUNA: %d |\n\n", tipo_analisado, string.tamanho, codigo, string.linha_ocorrencia, string.coluna_identificado);
 }
 
-// Função  responsável por exibir a tabela de símbolos, que armazena lexemas e seus tipos formatando a saida em um arquivo 
 void __displaySimbolos(FILE *arquivo_destino) {
-    fprintf(arquivo_destino, "\nTABELA SIMBOLOS\n");
+    fprintf(arquivo_destino, "\n+--------------------------TABELA ANALISE--------------------------+\n");
     for (int i = 0; i <indice_simbolo; i++) {
             if (strcmp("{", tabela_simbolos[i].lexema_analisado) == 0){
                 fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, SMB_OBC);
@@ -282,49 +301,118 @@ void __displaySimbolos(FILE *arquivo_destino) {
             else if (strcmp(")", tabela_simbolos[i].lexema_analisado) == 0){
                 fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, SMB_CPA);
             }
+            else if (strcmp("program", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("PROGRAM", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("var", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("VAR", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("integer", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("INTEGER", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("real", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("REAL", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("begin", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("BEGIN", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("end", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("END", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("if", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("IF", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("then", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("THEN", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("end", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("END", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("else", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("ELSE", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("while", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("WHILE", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("do", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("DO", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_RESERVADO);
+            }
+            else if (strcmp("0", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_INT);
+            }
+            else if (strcmp("1", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_INT);
+            }
+            else if (strcmp("2", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_INT);
+            }
+            else if (strcmp("3", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_INT);
+            }
+            else if (strcmp("4", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_INT);
+            }
+            else if (strcmp("5", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_INT);
+            }
+            else if (strcmp("6", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_INT);
+            }
+            else if (strcmp("7", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_INT);
+            }
+            else if (strcmp("8", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_INT);
+            }
+            else if (strcmp("9", tabela_simbolos[i].lexema_analisado) == 0){
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_INT);
+            }
             else {
-                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, tabela_simbolos[i].tipo);
+                fprintf(arquivo_destino, "|LEXEMA: %s | TIPO: %d |\n", tabela_simbolos[i].lexema_analisado, TK_ID);
             }
     }
     
 }
 
-
-/*
-int __operadores(const char *string) {
-    const char *operador[] = {
-        '=',
-        '>=',
-        '*',
-        '<>',
-        '<=',
-        '/',
-        '>',
-        '+',
-        '=',
-        '<',
-        '-'
-    };
-    int total_operadores = sizeof(operador) / sizeof(operador[0]);
-
-    for (int i = 0; i < total_operadores; i++) {
-        if (strcmp(string, total_operadores[i] == 0)){
-            return 1;
-        }
-        
-    }
-    
-
-
-}
-*/
-
-// Principal função 
-// lê um arquivo de origem, identifica tokens e escreve os resultados em um arquivo de destino
 void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino) {
     FILE *file = fopen(arquivo_origem, "r");
 
-    // Verifica se o arquivo de origem foi aberto corretamente
     if (!arquivo_origem) {
         perror("ERRO: O ARQUIVO INFORMADO NAO FOI LOCALIZADO, REVEJA SEUS PARAMETROS.");
         return;
@@ -332,26 +420,26 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
 
     FILE *file_destino = fopen(arquivo_destino, "w");
 
-    // Verifica se o arquivo de destino foi aberto corretamente
     if (!arquivo_destino) {
         perror("ERRO: O ARQUIVO INFORMADO NAO FOI LOCALIZADO, REVEJA SEUS PARAMETROS.");
         fclose(file);
         return;
     }
 
-    // Variaveis importantes para a execução do código
-    char ch; // Armazena o caractere lido do arquivo
-    char buffer[MAX_MEMORIA_ANALISADOR]; // Buffer para armazenar tokens
-    int indice_buffer = 0; // Índice do buffer
-    int linha = 1;  // Contador de linhas
-    int coluna = 1;  // Contador de colunas
-    int abriu_parenteses = 0;  // Contador de parênteses abertos
-    int abriu_chaves = 0;  // Contador de chaves abertas
+    char ch;
+    char buffer[MAX_MEMORIA_ANALISADOR];
+    int indice_buffer = 0;
+    int linha = 1;
+    int coluna = 1;
+    int abriu_parenteses = 0;
+    int linha_abertura_parenteses = 0;
+    int coluna_abertura_parenteses = 0;
+    int abriu_chaves = 0;
+    int linha_abertura_chaves = 0;    
+    int coluna_abertura_chaves = 0;
 
-    // Loop principal para ler cada caractere do arquivo
     while ((ch = fgetc(file)) != EOF) {
 
-        // Ignora espaços em branco e atualiza linha/coluna
         if (isspace(ch)) {
             if (ch == '\n') {
                 linha++;
@@ -363,7 +451,6 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
             continue;
         }
 
-        // Lida com identificadores e palavras-chave
         if (isalpha(ch)) {
             buffer[indice_buffer++] = ch;
             while (isalnum(ch = fgetc(file))) {
@@ -390,7 +477,6 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
             strcpy(token.tamanho, buffer);
             __displayTokens(file_destino, token);
         }
-        // Lida com números (inteiros e reais)
         else if (isdigit(ch)) {
             buffer[indice_buffer++] = ch;
             int eh_real = 0;
@@ -421,47 +507,8 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
             strcpy(token.tamanho, buffer);
             __displayTokens(file_destino, token);
         }
-        // Lida com strings
-        else if (ch == '"') {
-            buffer[indice_buffer++] = ch;
-            int ocorrencia_abertura = coluna;
 
-            while ((ch = fgetc(file)) != EOF && ch != '"') {
-                if (ch == '\n') {
-                    fprintf(arquivo_destino, "\n|ERRO LEXICO IDENTIFICADO, STRING NAO FOI FECHADA CORRETAMENTE | LINHA: %d | COLUNA: %d |\n\n", linha, ocorrencia_abertura);
-                    linha++;
-                    coluna = 1;
-                    indice_buffer = 0;
-                    break;
-                }
-
-                buffer[indice_buffer++] = ch;
-                coluna++;
-            }
-            if (ch == '"') {
-                buffer[indice_buffer++] = ch;
-                buffer[indice_buffer] = '\0';
-
-                Token token;
-                token.tipo = TK_STRING;
-                token.linha_ocorrencia = linha;
-                token.coluna_identificado = ocorrencia_abertura;
-                strcpy(token.tamanho, buffer);
-                __displayTokens(arquivo_destino, token);
-                coluna++;
-            }
-            else {
-                indice_buffer = 0;
-            }
-        }
-        // Lida com operadores
         else if(strchr("+-*/=<>:", ch)) { //strchr VAI PERCORRER UM PONTEIRO PROCUANDO A OCORRÊNCIA DO SIMBOLO
-            /*Token token;
-            token.tipo = TK_OPERADOR;
-            token.tamanho[0] = ch;
-            token.tamanho[1] = '\0';
-            __displayTokens(file_destino, token);*/
-
             buffer[indice_buffer++] = ch;
             char prox_caractere = fgetc(file);
 
@@ -482,12 +529,13 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
             token.coluna_identificado = coluna - strlen(buffer) + 1;
             strcpy(token.tamanho, buffer);
 
+            int analisado = __getOperadorandSimbolos(token.tamanho);
+
             fprintf(file_destino, "|TOKEN: OPERADOR| TOKEN ANALISADO: %s | CODIGO:  %d| LINHA DE OCORRENCIA: %d | COLUNA: %d |\n\n", token.tamanho,__getOperadorandSimbolos(token.tamanho),  token.linha_ocorrencia, token.coluna_identificado);
 
             coluna++;
             
         }
-        // Lida com símbolos
         else if(strchr("{},;().", ch)) { //strchr VAI PERCORRER UM PONTEIRO PROCUANDO A OCORRÊNCIA DO SIMBOLO
             Token token;
             token.tipo = TK_SIMBOLO;
@@ -502,29 +550,33 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
 
             if (ch == '(') {
                 abriu_parenteses++;
+                linha_abertura_parenteses = token.linha_ocorrencia;
+                coluna_abertura_parenteses = token.coluna_identificado;
             }
-            else if (ch == ')') {
-                if (abriu_parenteses > 0) {
+
+            if (ch == ')') {
+                if (abriu_parenteses == 1) {
                     abriu_parenteses--;
                 }
-            else {
+                else if (abriu_parenteses > 1){
                     fprintf(file_destino, "\n|ERRO LEXICO IDENTIFICADO: O USUARIO ABRIU PARENTESES, MAS NAO REALIZOU O FECHAMENTO | LINHA %d | COLUNA: %d |\n\n", linha, coluna);
                 }
             }
                 
             if (ch == '{') {
                 abriu_chaves++;
-                if (ch == '}') {
-                    if (abriu_chaves > 0) {
-                        abriu_chaves--;
-                    }
+                linha_abertura_chaves = token.linha_ocorrencia;
+                coluna_abertura_chaves = token.coluna_identificado;
             }
-            else {
-                fprintf(file_destino, "\n|ERRO LEXICO IDENTIFICADO: O USUARIO ABRIU CHAVES, MAS NAO REALIZOU O FECHAMENTO | LINHA %d | COLUNA: %d |\n\n", linha, coluna);
+            else if (ch == '}') {
+                if (abriu_chaves > 0) {
+                    abriu_chaves--;
+                }
+                else {
+                    fprintf(file_destino, "\n|ERRO LEXICO IDENTIFICADO: O USUARIO ABRIU CHAVES, MAS NAO REALIZOU O FECHAMENTO | LINHA %d | COLUNA: %d |\n\n", linha, coluna);
                 }
             }
         }
-        // Lida com caracteres não reconhecidos
         else {
             Token token;
             token.tipo = TK_ERRO;
@@ -535,33 +587,42 @@ void __analisadorLexico(const char *arquivo_origem, const char *arquivo_destino)
 
             fprintf(file_destino, "\n|ERRO LEXICO: O CARACTERE INFORMADO NAO E RECONHECIDO PELA LINGUAGEM (%c) | LINHA: %d | COLUNA: %d|\n\n", ch, linha, coluna);
             coluna++;
-            
+
+            fprintf(file_destino, "\n|ERRO AO REALIZAR A ANÁLISE LÉXICA: %c NÃO FOI RECONHECIDO|\n\n", ch);
+            return;
             
         }
 
     }
 
-    // Verificação de parênteses e chaves não fechados
     if (abriu_parenteses > 0) {
+
         fprintf(file_destino, "\n|ERRO LEXICO IDENTIFICADO: %d PAREENTESES NAO FOI FECHADO CORRETAMENTE|\n\n", abriu_parenteses);
+        fprintf(file_destino, "\n|ERRO LEXICO IDENTIFICADO: O USUARIO ABRIU PARENTESES, MAS NAO REALIZOU O FECHAMENTO | LINHA %d | COLUNA: %d |\n\n", linha_abertura_parenteses, coluna_abertura_parenteses);
+        return;
     }
     if (abriu_chaves > 0) {
         fprintf(file_destino, "\n|ERRO LEXICO IDENTIFICADO: %d CHAVES NAO FOI FECHADO CORRETAMENTE|\n\n", abriu_chaves);
+        fprintf(file_destino, "\n|ERRO LEXICO IDENTIFICADO: O USUARIO ABRIU CHAVES, MAS NAO REALIZOU O FECHAMENTO | LINHA %d | COLUNA: %d |\n\n", linha_abertura_chaves, coluna_abertura_chaves);
+        return;
     }
 
-    // Exibe a tabela de símbolos
     __displaySimbolos(file_destino);
 
-    // Fecha os arquivos
     fclose(file_destino);
-    fclose(file); 
+    fclose(file); //FECHAR O ARQUIVO APOS A REALIZAÇÃO DE TODO O PROCESSO
 }
 
 int main() {
     __lerArquivo("exemplo1.txt");
     printf("\n");
     __palavrasChaves();
+    
+    // GERAR ARQIVO .txt
     __analisadorLexico("exemplo1.txt", "lexico.txt");
+
+    // GERAR ARQUIVO .lex
+    __analisadorLexico("exemplo1.txt", "analise.lex");
 
     return 0;
 }
