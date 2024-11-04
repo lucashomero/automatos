@@ -1,0 +1,408 @@
+#include <stdio.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+
+//DEFINIÇÃO DE TOKENS
+
+#define PROGRAM 250
+#define END 251
+#define IDENTIFICADOR 252
+#define SMB_SEM ';'
+#define SMB_DOT '.'
+#define VAR 253
+#define BEGIN 254
+#define END 255
+#define OP_ASS 256
+#define IF 257
+#define THEN 258
+#define ELSE 259
+#define WHILE 260
+#define DO 261
+#define OP_AD '+'
+#define OP_MIN '-'
+#define OP_MUL '*'
+#define OP_DIV '/'
+#define SMB_OPA '('
+#define SMB_CPA ')'
+#define INTEGER 262
+#define REAL 263
+#define SMB_COM ','
+#define COMMA ':'
+#define NUM 264
+#define OP_EQ '='
+#define OP_NEQ 265 //<>
+#define OP_GT '>' 
+#define OP_GE 266 //>=
+#define OP_LT '<'
+#define OP_LE 267 //<=
+#define END_PROGRAM '.'
+#define END_FILE 0
+
+typedef struct {
+    int type;
+    double value;
+    char lexema[32];
+} Token;
+
+//VARIÁVEL GLOBAL PARA O TOKEN ATUAL
+
+Token currentToken;
+char *input;
+int line = 1;
+
+//FUNÇÃO LÉXICA PARA OBTER O P´ROXIMO TERMO
+
+Token __getToken() {
+    Token token;
+
+    while (*input == ' ' || *input == '\t' || *input == '\n') {
+        if (*input == '\n') line++;
+        input++; //IGNORAR ESPAÇOS EM BRANCO E CONTAGEM LINHAS
+    }
+
+    if (*input == '\0') {
+        token.type = END_FILE;
+
+        return token;
+    }
+
+    if (isdigit(*input)) {
+        token.type = NUM;
+        token.value = strtod(input, &input);
+
+        return token;
+    }
+
+    if (isalpha(*input)) {
+        int length = 0;
+
+        while (isalnum(*input)) {
+            token.lexema[length++] = *input++;
+        }
+        token.lexema[length] = '\0';
+
+        if (strcmp(token.lexema, "program") == 0) token.type =  PROGRAM;
+        else if (strcmp(token.lexema, "var") == 0) token.type =  VAR;
+        else if (strcmp(token.lexema, "begin") == 0) token.type =  BEGIN;
+        else if (strcmp(token.lexema, "end.") == 0) token.type =  END_PROGRAM;
+        else if (strcmp(token.lexema, "if") == 0) token.type =  IF;
+        else if (strcmp(token.lexema, "then") == 0) token.type =  THEN;
+        else if (strcmp(token.lexema, "else") == 0) token.type =  ELSE;
+        else if (strcmp(token.lexema, "while") == 0) token.type =  WHILE;
+        else if (strcmp(token.lexema, "do") == 0) token.type =  DO;
+        else if (strcmp(token.lexema, "integer") == 0) token.type =  INTEGER;
+        else if (strcmp(token.lexema, "real") == 0) token.type =  REAL;
+        else token.type = IDENTIFICADOR;
+        
+        return token;
+    }
+
+     switch (*input) {
+        case '+': 
+            token.type = OP_AD;
+            break;
+        case '-': 
+            token.type = OP_MIN;
+            break;
+        case '*': 
+            token.type = OP_MUL;
+            break;
+        case '/': 
+            token.type = OP_DIV;
+            break;
+        case '(': 
+            token.type = SMB_OPA;
+            break;
+        case ')': 
+            token.type = SMB_CPA;
+            break;
+        case '=': 
+            if (*(input + 1) == '=') {
+                input += 2;
+                token.type = OP_EQ;
+            }
+            else {
+                token.type = OP_EQ;
+                input++;
+            }
+        case '>':
+            if (*(input + 1) == '=') {
+                input += 2;
+                token.type = OP_GE;
+    
+            }
+            else {
+                token.type = OP_GT;
+                input++;
+            }
+            break;
+        case '<':
+            if (*(input + 1) == '=') {
+                input += 2;
+                token.type = OP_LE;
+    
+            }
+            else {
+                token.type = OP_LT;
+                input++;
+            }
+            break;
+        case ':':
+            if (*(input + 1) == '=') {
+                token.type = OP_ASS;
+                input += 2;
+            }
+            else {
+                printf("ERRO: %d TOKEN NAO ESPERADO [%c]!\n", line, *input);
+                exit(1);
+            }
+            break;
+        case ';':
+            token.type = SMB_SEM;
+            break;
+        case '.':
+            token.type = SMB_DOT;
+            break;
+        case ',':
+            token.type = SMB_COM;
+            break;
+        default:
+            printf("ERRO: %d TOKEN NAO ESPERADO [%c]!\n", line, *input);
+            exit(1);
+    }
+
+    return token;
+}
+
+//FUNÇÃO PARA AVANÇAR O TOKEN ATUAL
+
+void __advance() {
+    currentToken = __getToken();
+}
+
+//FUNÇÃO PARA VERIFICAR E CONSUMIR TOKENS ESPERADOS
+
+void __casaToken(int expected) {
+    if (currentToken.type == expected) {
+        __advance();
+    }
+    else {
+        printf("ERRO: %d TOKEN NAO ESPERADO [%s]!\n", line, currentToken.lexema);
+        exit(1);
+    }
+}
+
+//PROTÓTIPOS
+
+double __parseExpression();
+void __block();
+void __declarations();
+void __commands();
+void __command();
+
+
+//FUNÇÃO PARA PROCESSEAR EXPERESSÕES
+
+void __program() {
+    __casaToken(PROGRAM);
+    __casaToken(IDENTIFICADOR);
+    __casaToken(SMB_SEM);
+    __block();
+    __casaToken(SMB_DOT);
+}
+
+void __block() {
+    if (currentToken.type = VAR) {
+        __declarations();
+    }
+    __casaToken(BEGIN);
+    __commands();
+    __casaToken(END);
+}
+
+void __declarations() {
+    __casaToken(VAR);
+
+    while (currentToken.type == IDENTIFICADOR) {
+        __casaToken(IDENTIFICADOR);
+        __casaToken(SMB_COM);
+        __casaToken(IDENTIFICADOR);
+        __casaToken(SMB_SEM);
+    }
+}
+
+void __commands() {
+    __command();
+
+    while (currentToken.type == SMB_SEM) {
+        __casaToken(SMB_SEM);
+        __command();
+    }
+}
+
+void __command() {
+    if (currentToken.type == IDENTIFICADOR) {
+        __casaToken(IDENTIFICADOR);
+        __casaToken(OP_ASS);
+        __parseExpression();
+    }
+    else if (currentToken.type == IF) {
+        __casaToken(IF);
+        __parseExpression();
+        __casaToken(THEN);
+        __command();
+
+        if (currentToken.type == ELSE) {
+            __casaToken(ELSE);
+            __command();
+        }
+    }
+    else if (currentToken.type == WHILE) {
+        __casaToken(WHILE);
+        __parseExpression();
+        __casaToken(DO);
+        __command();
+    }
+    else {
+        printf("ERRO: %d TOKEN NAO ESPERADO [%s]!\n", line, currentToken.lexema);
+        exit(1);
+    }
+}
+
+//FUNÇÃO PARA PROCESSAR UM FATOR (NÚMERO OU EXPRESSÃO EM PARÊNTESES)
+
+double __parseFactor() {
+    double result;
+
+    if (currentToken.type == NUM) {
+        result = currentToken.value;
+        __advance();
+    }
+    else if (currentToken.type == SMB_OPA) {
+        __advance(); //CONSOME '('
+        result = __parseExpression(); //AVALIA A EXPRESSÃO DENTRO DOS PARENTÊSES
+        __casaToken(SMB_CPA); //ESPERA E CONSOME ')'
+    }
+    else {
+        printf("ERRO: %d TOKEN NAO ESPERADO [%s]!\n", line, currentToken.lexema);
+        exit(1);
+    }
+
+    return result;
+}
+
+//FUNÇÃO PARA PROCESSAR UM TERMO (FATOR SEGUIDO POR MULTIPLICAÇÃO OU DISISÃO)
+
+double __parseTerm() {
+    double result = __parseFactor(); //AVALIA O PRIMEIRO FATOR
+
+    while (currentToken.type == OP_MUL || currentToken.type == OP_DIV) {
+        if (currentToken.type == OP_MUL) {
+            __advance(); // CONSOME '*'
+            result *= __parseFactor(); //MULTIPLICA PELO PRÓXIMO FATOR
+        }
+        else if (currentToken.type == OP_DIV) {
+            __advance(); //CONSOME '/'
+            double divisor = __parseFactor();
+
+            if (divisor == 0) {
+                printf("ERRO: %d: DIVISAO POR ZERO!\n", line);
+                exit(1);
+            }
+            result /= divisor; //DIVIDE PELO PRÓXIMO FATOR
+        }
+    }
+    return result;
+}
+
+//FUNÇÃO PARA PROCESSAR UMA EXPRESSÃO (TERMO SEGUIDO POR ADIÇÃO OU SUBTRAÇÃO)
+
+double __parseExpression() {
+    double result = __parseTerm(); //AVALIA O PRIMEIRO TERMO
+
+    while (currentToken.type == OP_AD || currentToken.type == OP_MIN) {
+        if (currentToken.type == OP_AD) {
+            __advance(); // CONSOME '+'
+            result += __parseTerm(); //SOMA COM O PRÓXIMO TERMO
+        }
+        else if (currentToken.type == OP_MIN) {
+            __advance(); //CONSOME '-'
+            result -=__parseTerm(); //SUBTRAI PELO PRÓXIMO FATOR
+        }
+    }
+    return result;
+}
+
+void __parseCommand() {
+    if (currentToken.type == IDENTIFICADOR) {
+        __advance(); //CONSOME IDENTIFICADOR
+        __casaToken(OP_ASS); //ESPERA := 
+        double result = __parseExpression(); //AVALIA A EXPRESSÃO
+        __casaToken(SMB_SEM); //ESPERA ;
+        printf("RESULTADO: %f\n", result); //EXIBE O RESULTADO
+    }
+    else if (currentToken.type == IF) {
+        __advance(); //CONSOME IF
+
+        if (currentToken.type == IDENTIFICADOR) {
+            __advance(); //CONSOME ID
+            __casaToken(OP_GT); //ESPERA >
+
+            if (currentToken.type == NUM || currentToken.type == IDENTIFICADOR) {
+                __advance(); //CONSOME NÚMEMRO OU IDENTIFICADOR
+                __casaToken(THEN); //ESPERA THEN
+                __parseCommand(); //AVALIA O COMANDO APÓS O THEN
+            }
+            else {
+                printf("ERRO: %d TOKEN NAO ESPERADO [%s]!\n", line, currentToken.lexema);
+                exit(1);
+            }
+        }
+        else {
+            printf("ERRO: %d TOKEN NAO ESPERADO [%s]!\n", line, currentToken.lexema);
+            exit(1);
+        }
+    }
+    else {
+        printf("ERRO: %d TOKEN NAO ESPERADO [%s]!\n", line, currentToken.lexema);
+        exit(1);
+    }
+}
+
+//FUNÇÃO PARA PROCESSAR BLOCOS 
+
+void __parseBeginEnd() {
+    __casaToken(BEGIN);
+    __parseCommand(); //PRIMEIRA INSTRUÇÃO DENTRO DO BLOCO
+
+    while (currentToken.type != END) {
+        __parseCommand(); //PRÓXIMAS INSTRUÇÕES DO BLOCO
+    }
+    __casaToken(END); //CONSOME END
+}
+
+//FUNÇÃO PRINCIPAL DE ANÁLISE
+
+void __parse() {
+    __advance();
+    __program();
+
+    if (currentToken.type != END_FILE) {
+        printf("ERRO: %d FIM DE ARQUIVO NÃO ESPERADO!\n", line);
+        exit(1);
+    }
+}
+
+//PROGRAMA PRINCIPAL
+
+int main() {
+    input = "program teste; var a: integer; begin a := (2.1 + 5) * 4 - 1; end.";
+    printf("ANALISANDO O SCRIPT: %s\n", input);
+
+    __parse(); //INICIA O PROCESSO DE PARSING
+
+    printf("ANÁLISE CONCLUÍDA SEM ERROS.\n");
+
+    return 0;
+}
