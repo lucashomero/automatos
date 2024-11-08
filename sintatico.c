@@ -57,7 +57,8 @@ int line;
 Token getToken() {
     Token token;
 
-    while (*input == ' ' || *input == '\t') {
+    while (*input == ' ' || *input == '\t' || *input == '\n') {
+        if (*input == '\n') line++;
         input++;
     }
 
@@ -80,6 +81,7 @@ Token getToken() {
         while (isalnum(*input)) {
             token.lexema[length++] = *input++;
         }
+        token.lexema[length++] = '\0';
 
         if (strcmp(token.lexema, "program") == 0) token.type = PROGRAM;
         else if (strcmp(token.lexema, "var") == 0) token.type = VAR;
@@ -131,6 +133,10 @@ Token getToken() {
         case ';': token.type = SMB_SEM; break;
         case '.': token.type = SMB_DOT; break;
         case ',': token.type = SMB_COM; break;
+        case '+': token.type = OP_AD; break;
+        case '-': token.type = OP_MIN; break;
+        case '*': token.type = OP_MUL; break;
+        case '/': token.type = OP_DIV; break;
         default:
         printf("ERRO: %d: TOKEN NAO ESPERADO [%c].\n", line, *input);
             token.type = TK_ERROR;
@@ -158,88 +164,215 @@ void __casaToken(int tkExpected) {
     }
     else {
         printf("%d TOKEN NAO ESPERADO [%s].", line, currentToken.lexema);
+        exit(1);
     }
 }
 
 //FUNÇÕES PARA PRECONHECIMENTO DE EXPRESSÕES
 
-void __parseFactor() {
-    if (currentToken.type == PROGRAM) {
-        __advance();
-
-        if (currentToken.type != IDENTIFICADOR) {
-            printf("%d TOKEN NAO ESPERADO [%s].", line, currentToken.lexema);
-            exit(1);
-        }
-        else {
-            __advance(); //CONSOME IDENTIFICADOR
-
-            if (currentToken.type != SMB_SEM) {
-                printf("%d TOKEN NAO ESPERADO [%s].", line, currentToken.lexema);
-                exit(1);
-            }
-            else {
-                __advance(); //CONSOME ';'
-
-                if (currentToken.type != VAR) {
-                    printf("%d TOKEN NAO ESPERADO [%s].", line, currentToken.lexema);
-                    exit(1);
-                }
-                __advance(); //COSNSOME 'VAR'
-                printf("REGRA: <programa>::= program <identificador> ; <bloco> .");
-            }
-        }
-    }
-    else if (currentToken.type == VAR) {
-        __advance();
-        printf("REGRA: var\n");
-    }
-    else if (currentToken.type == INTEGER) {
-        __advance();
-        printf("REGRA: <declaração de variáveis> ::=<lista de identificadores> : <tipo>\n");
-    }
-    else if (currentToken.type == BEGIN) {
-       __advance();
-    }
-    else if (currentToken.type == SMB_OPA) {
-        __advance(); //CONSOME '('
-
-        if (currentToken.type != SMB_CPA) {
-            printf("%d TOKEN NAO ESPERADO [%s].", line, currentToken.lexema);
-            exit(1);
-        }
-        __advance(); //CONSOME ')'
-        printf("REGRA: <termo> ::= <fator>\n");
-    }
-    else if (currentToken.type == SMB_OBC) {
-         __advance(); //CONSOME '{'
-
-        if (currentToken.type != SMB_CBC) {
-            printf("%d TOKEN NAO ESPERADO [%s].", line, currentToken.lexema);
-            exit(1);
-        }
-        __advance(); //CONSOME '}'
-        printf("REGRA: <termo> ::= <fator>\n");
-    }
-    
-}
-
-//FUNÇÃO PRINCIPAL DO ANALISADOR SINTÁTICO
+void __parseBloco(); //PROTÓTIPO
+void __parseParteDeclaracoes(); //PROTÓTIPO
+void __parseDeclaracaoVariaveis(); //PROTÓTIPO
+void __parseComandoComposto(); //PROTÓTIPO
+void __parseComando(); //PROTÓTIPO
+void __parseExpressao(); //PROTÓTIPO
+void __parseTermo(); //PROTÓTIPO
+void __parseFactor(); //PROTÓTIPO
 
 void __parse() {
-    __advance(); //OBTÉM O PRIMEIRO TOKEN
-    __parseFactor();
+    __advance();
+
+    if (currentToken.type == PROGRAM) {
+        __advance(); //OBTÉM O PRIMEIRO TOKEN
+        __casaToken(IDENTIFICADOR);
+        __casaToken(SMB_SEM);
+
+        printf("REGRA: <programa>::= program <identificador> ; <bloco> .\n\n");
+
+        __parseBloco();
+        __casaToken(SMB_DOT); //CONOSME O PONTO FINAL
+    } 
+    else {
+        printf("%d TOKEN NAO ESPERADO [%s].\n", line, currentToken.lexema);
+        exit(1);
+    }
 
     if (currentToken.type != END) {
-        printf("%d FIM DE ARQUIVO NAO ESPERADO.", line);
+        printf("%d FIM DE ARQUIVO NAO ESPERADO.\n", line);
         exit(1);
     }
 }
 
+void __parseBloco() {
+    printf("REGRA: <bloco> ::= <parte de declaracoes de variaveis> <comando composto>\n\n");
+
+    __parseParteDeclaracoes();
+
+    if (currentToken.type == BEGIN) {
+        __parseComandoComposto();
+
+    }
+    else {
+        printf("%d TOKEN NAO ESPERADO [%s].\n", line, currentToken.lexema);
+        exit(1);
+    }
+        
+}
+
+void __parseParteDeclaracoes() {
+    if (currentToken.type == VAR) {
+        printf("REGRA: <parte de declaracoes de variaveis> ::= var <declaracao de variaveis> { ; <declaracao de variaveis> } ;\n\n");
+
+        __advance(); //CONSOME 'VAR'
+        __parseDeclaracaoVariaveis();
+
+        while (currentToken.type == SMB_SEM) {
+            __advance(); //CONSOME ';'
+
+            if (currentToken.type == IDENTIFICADOR) {
+                __parseDeclaracaoVariaveis();
+            }
+            else {
+                break;
+            }
+        }
+        //__casaToken(SMB_SEM); //ESPERA ';' AO FINAL DA DECLARAÇÃO
+    }
+}
+
+void __parseDeclaracaoVariaveis() {
+    printf("REGRA: <declaracao de variaveis> ::= <lista de identificadores> : <tipo>\n\n");
+
+    if (currentToken.type == IDENTIFICADOR){
+        while (currentToken.type == IDENTIFICADOR) {
+            __advance(); //AVANÇA PARA O PRÓXIMO IDENTIFICADOR OU VÍRGULA
+
+            if (currentToken.type == SMB_COM) {
+                __advance(); //CONSOME A VÍRGULA
+            }
+            else {
+                break;
+            }
+        }
+    }
+    __casaToken(COMMA); //VERIFICA O ':'
+
+    if (currentToken.type == INTEGER || currentToken.type == REAL) {
+        __advance(); //CONSOME VARIÁVEIS DO TIPO INTERGER OU REAL
+    }
+    else {
+        printf("%d TOKEN NAO ESPERADO [%s].\n", line, currentToken.lexema);
+        exit(1);
+    }
+}
+
+void __parseComandoComposto() {
+    if (currentToken.type == BEGIN) {
+        printf("REGRA: <comando composto> ::= begin <comando> ; { <comando> ; } end\n\n");
+
+        __advance(); //CONSOME 'BEGIN'
+        __parseComando();
+
+        while (currentToken.type == SMB_SEM) {
+            __advance(); //CONSOME ';'
+            if (currentToken.type == END) {
+                break;
+            }
+            __parseComando();
+        }
+        __casaToken(END);
+    }
+    else {
+        printf("%d TOKEN NAO ESPERADO [%s].\n", line, currentToken.lexema);
+        exit(1);
+    }
+}
+
+void __parseComando() {
+    if (currentToken.type == IDENTIFICADOR) {
+        printf("REGRA: <comando> ::= <atribuicao>\n\n");
+
+        __advance();
+        __casaToken(OP_ASS);
+        __parseExpressao();
+    }
+    else if (currentToken.type == IF) {
+        printf("REGRA: <comando> ::= <comando condicional>\n\n");
+
+        __advance();
+        __parseExpressao(); //PROCESSA A EXPRESSÃO APÓS O IF
+        __casaToken(THEN);
+        __parseComando();
+
+        if (currentToken.type == ELSE) {
+            __advance();
+            __parseComando();
+        }
+    }
+    else if (currentToken.type == WHILE) {
+        printf("REGRA: <comando> ::= <comando repetitivo>\n\n");
+
+        __advance();
+        __parseExpressao();
+        __casaToken(DO);
+        __parseComando();
+    }
+    else if (currentToken.type == BEGIN) {
+        __parseComandoComposto();
+    }
+    else {
+        printf("%d TOKEN NAO ESPERADO [%s].\n", line, currentToken.lexema);
+        exit(1);
+    }
+}
+
+void __parseExpressao() {
+    __parseTermo();
+
+    while (currentToken.type == OP_AD || currentToken.type == OP_MIN || currentToken.type == OP_EQ || currentToken.type == OP_GE || currentToken.type == OP_LE || currentToken.type == OP_LT || currentToken.type == OP_GT || currentToken.type == OP_NE) {
+        __advance();
+        __parseTermo();
+    }
+}
+
+void __parseTermo() {
+    __parseFactor();
+
+    while (currentToken.type == OP_MUL || currentToken.type == OP_DIV) {
+        __advance();
+        __parseFactor();
+    }
+}
+
+void __parseFactor() {
+    if (currentToken.type == IDENTIFICADOR) {
+        __advance();
+    }
+    else if (currentToken.type == NUM) {
+        __advance();
+    }
+    else if (currentToken.type == SMB_OPA) {
+        __advance(); //CONSOME '('
+        __parseExpressao(); //AVALIA A EXPRESSÃO DENTRO DOS PARÊNTESES
+        if (currentToken.type != SMB_CPA) {
+            printf("%d TOKEN NAO ESPERADO [%s]. ESPERADO: )\n", line, currentToken.lexema);
+            exit(1);
+        }
+        __casaToken(SMB_CPA); //COSNOME ')'
+    }
+    else {
+        printf("%d TOKEN NAO ESPERADO [%s].\n", line, currentToken.lexema);
+        exit(1);
+    }
+    
+}
+
 int main() {
     numTokens = 0;
+    line = 1;
 
-    input = "{}";
+    input = "\n program example;\n var x, y: integer;\n begin x := (1 + 2); if x > y then y := y + 1 else y := y - 1;\n while y < 10 do y := y + 1;\n end.";
+    //input = "program teste; var a: integer; begin a := 5; if a < 5 then a := 1 else a := 6; while a = 5 do a := 1; end.";
     printf("ANALISANDO: %s\n", input);
 
     __parse(); //INICIA O PROCESSO DE ANALISE (PARSING)
